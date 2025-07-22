@@ -1,2 +1,2 @@
 # DB
-mysql
+my SQL
