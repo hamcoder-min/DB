@@ -93,12 +93,12 @@ select employee_name, employee_id, gender, phone, hire_date, retire_date from em
 --      단, 고객아이디를 기준으로 오름차순 정렬해서 조회하세요.
 show tables;
 select * from order_header;
-select * from order_header where order_date between "2019-01-01%" and "2019-01-08%" order by customer_id;
+select * from order_header where order_date between "2019-01-01 00:00:00" and "2019-01-07 23:59:59" order by customer_id;
 
 -- Q29) 2019-01-01 ~ 2019-01-07 기간 주문의 주문번호, 고객아이디, 사원번호, 주문일시, 소계, 배송비, 전체금액을 조회하세요.
 --      단, 전체금액을 기준으로 내림차순 정렬해서 조회하세요.
-select * from order_header where order_date between "2019-01-01%" and "2019-01-08%" order by total_due desc;
+select * from order_header where order_date between "2019-01-01 00:00:00" and "2019-01-08 23:59:59" order by total_due desc;
 
 -- Q30) 2019-01-01 ~ 2019-01-07 기간 주문의 주문번호, 고객아이디, 사원번호, 주문일시, 소계, 배송비, 전체금액을 조회하세요.
 --      단, 사원번호를 기준으로 오름차순, 같은 사원번호는 주문일시를 기준으로 내림차순 정렬해서 조회하세요.
-select * from order_header where order_date between "2019-01-01%" and "2019-01-08%" order by employee_id asc, order_date desc;
+select * from order_header where order_date between "2019-01-01 00:00:00" and "2019-01-08 23:59:59" order by employee_id asc, order_date desc;
