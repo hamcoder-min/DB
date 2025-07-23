@@ -274,14 +274,39 @@ group by city, gender
 order by city asc, gender asc;
 
 /** order_header 테이블 사용 **/
-    
--- Q16) 2019년 1월 주문에 대하여 고객아이디별 전체금액 합을 조회하세요.
+select * from order_header;
 
+-- Q16) 2019년 1월 주문에 대하여 고객아이디별 전체금액 합을 조회하세요.
+select 	customer_id
+        , sum(total_due) as total
+from order_header
+where left(order_date, 7) = '2018-01'
+group by customer_id;
 
 -- Q17) 주문연도별 전체금액 합계를 조회하세요.
+select 	left(order_date, 4) as year
+		, sum(total_due)
+from order_header
+group by left(order_date, 4);
 
 -- Q18) 2019.01 ~ 2019.06 기간 주문에 대하여 주문연도별, 주문월별 전체금액 합을 조회하세요.
+select 	left(order_date, 7) as 주문연월
+        , format(sum(total_due),0) '전체금액 합'
+from order_header
+where left(order_date, 7) between '2019-01' and '2019-06'
+group by left(order_date, 7);
 
 -- Q19) 2019.01 ~ 2019.06 기간 주문에 대하여 주문연도별, 주문월별 전체금액 합과 평균을 조회하세요.
+select 	left(order_date, 7) as 주문연월
+		, format(sum(total_due), 0) as '전체금액 합'
+        , format(avg(total_due), 0) as '평균'
+from order_header
+where left(order_date, 7) between '2019-01' and '2019-06'
+group by left(order_date, 7);
 
 -- Q20) 주문연도별, 주문월별 전체금액 합과 평균을 조회하고, rollup 함수를 이용하여 소계와 총계를 출력해주세요.
+select	left(order_date, 7) as 주문연월
+		, format(sum(total_due), 0) '전체금액 합'
+        , format(avg(total_due), 0) '평균'
+from order_header
+group by left(order_date, 7) with rollup;
