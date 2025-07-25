@@ -971,61 +971,137 @@ show tables;
 -- [서브쿼리]
 -- 정보시스템 부서의 사원들을 모두 조회
 -- 사번, 사원명, 부서아이디, 폰번호, 급여
-
+select	emp_id
+		, emp_name
+        , dept_id
+        , phone
+        , salary
+from	employee
+where	dept_id = (select dept_id from department where dept_name = '정보시스템');
 
 -- [스칼라 서브쿼리]
 -- 정보시스템 부서의 사원들을 모두 조회
 -- 사번, 사원명, 부서아이디, 부서명,(부서테이블) 폰번호, 급여
-
+select	emp_id
+		, emp_name
+        , (select dept_id from department where dept_name = '정보시스템') as dept_id	-- 권장 X
+        , phone
+        , salary
+from	employee
+where	dept_id = (select dept_id from department where dept_name = '정보시스템');
 
 -- 홍길동 사원이 속한 부서명을 조회
 -- '=' 로 조건절을 비교하는 경우 :: 단일행 서브쿼리
-
+select	dept_name
+from	department
+where	dept_id = (select dept_id from employee where emp_name = '홍길동');
 
 -- 홍길동 사원의 휴가사용 내역을 조회
-
+select	*
+from	vacation
+where	emp_id = (select emp_id from employee where emp_name = '홍길동');
 
 -- 제3본부에 속한 모든 부서를 조회
-
+select	*
+from	department
+where	unit_id = (select unit_id from unit where unit_name = '제3본부');
 
 -- 급여가 가장 높은 사원의 정보 조회
-
+select	*
+from	employee
+where	salary = (select max(salary) from employee);
 
 -- 급여가 가장 낮은 사원의 정보 조회
-
+select 	*
+from	employee
+where	salary = (select min(salary) from employee);
 
 -- 가장 빨리 입사한 사원의 정보 조회
-
+select	*
+from	employee
+where	hire_date = (select min(hire_date) from employee);
 
 -- 가장 최근 입사한 사원의 정보 조회
-
+select	*
+from	employee
+where	hire_date = (select max(hire_date) from employee);
 
 -- [서브쿼리 : 다중행 - IN]
 -- '제3본부'에 속한 모든 사원 정보 조회
-
+select	*
+from	employee
+where	dept_id in (select dept_id 
+					from department 
+                    where unit_id = (select unit_id 
+									from unit 
+									where unit_name = '제3본부'));
 	
 -- '제3본부'에 속한 모든 사원들의 휴가 사용 내역 조회
-
+select	*
+from	vacation
+where	emp_id in (select emp_id 
+					from employee 
+                    where dept_id in (select dept_id 
+										from department 
+                                        where unit_id in (select unit_id 
+															from unit 
+                                                            where unit_name = '제3본부')));
                                         
 -- [인라인뷰 : 메인쿼리의 테이블 자리에 들어가는 서브쿼리 형식]
 
 -- [휴가를 사용한 사원정보만!!]
 -- 사원별 휴가사용 일수를 그룹핑하여 사원아이디, 사원명, 입사일, 연봉, 휴가사용일수를 조회하세요.
-
+select	e.emp_id
+		, e.emp_name
+        , e.hire_date
+        , e.salary
+        , v.duration
+from	employee e
+		, (select 	emp_id
+					, sum(duration) as duration
+			from	vacation
+            group by emp_id) v
+where	e.emp_id = v.emp_id;
 
 -- ansi : inner join
-
-
+select	e.emp_id
+		, e.emp_name
+        , e.hire_date
+        , e.salary
+        , v.duration
+from	employee e
+		inner join (select 	emp_id
+							, sum(duration) as duration
+					from	vacation
+					group by emp_id) v
+		on e.emp_id = v.emp_id;
 
 -- [휴가를 사용한 사원정보 + 사용하지 않은 사원 포함!]
 -- 사원별 휴가사용 일수를 그룹핑하여 사원아이디, 사원명, 입사일, 연봉, 휴가사용일수를 조회하세요.
 -- 휴가를 사용하지 않은 사원은 기본값 0
 -- 사용일수 기준으로 내림차순 정렬
-           
+select	e.emp_id
+		, e.emp_name
+        , e.hire_date
+        , e.salary
+        , ifnull(v.duration, 0) as duration
+from	employee e
+		left outer join
+			(select 	emp_id
+					, sum(duration) as duration
+			from	vacation
+            group by emp_id) v
+		on e.emp_id = v.emp_id
+order by duration desc;
                         
 -- 1) 2016 ~ 2017년도 입사한 사원들의 정보 출력
 -- 2) 1번의 실행 결과와 vacation 테이블을 조인하여 휴가사용 내역 출력
-
+select	*
+from	vacation v
+		, (select	*
+			from	employee
+			where	left(hire_date, 4) between '2016' and '2017') e
+where v.emp_id = e.emp_id;
 
 -- 1) 부서별 총급여, 평균급여를 구하여 30000 이상인 부서 조회
 -- 2) 1번의 실행 결과와 employee 테이블을 조인하여 사원아이디, 사원명, 급여, 부서아이디, 부서명, 부서별 총급여, 평균급여 출력
@@ -1174,7 +1250,6 @@ desc emp;
 	** set sql_safe_updates = 1 or 0; 
     -- 1 : 업데이트 불가, 0 : 업데이트 가능
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-select * from emp;
 
 -- 이순신 사원 삭제
 
