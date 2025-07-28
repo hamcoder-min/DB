@@ -1105,9 +1105,41 @@ where v.emp_id = e.emp_id;
 
 -- 1) 부서별 총급여, 평균급여를 구하여 30000 이상인 부서 조회
 -- 2) 1번의 실행 결과와 employee 테이블을 조인하여 사원아이디, 사원명, 급여, 부서아이디, 부서명, 부서별 총급여, 평균급여 출력
-
-
-
+select	e.emp_id
+		, e.emp_name
+        , e.salary
+        , d.dept_id
+        , d.dept_name
+        , t.sum
+        , t.avg
+from	employee e
+		, department d
+        , (select	dept_id
+					, sum(salary) as sum
+					, avg(salary) as avg
+			from	employee 
+			group by dept_id
+			having	sum(salary) >= 30000) t
+where	e.dept_id = d.dept_id
+		and d.dept_id = t.dept_id;
+        
+select 	e.emp_id
+		, e.emp_name
+        , e.salary
+        , d.dept_id
+        , d.dept_name
+        , t.sum
+        , t.avg
+from	employee e
+		inner join department d
+        on e.dept_id = d.dept_id
+        inner join (select	dept_id
+							, sum(salary) as sum
+							, avg(salary) as avg
+					from	employee 
+					group by dept_id
+					having	sum(salary) >= 30000) t
+		on d.dept_id = t.dept_id;
 
 /***************************************************
 	테이블 결과 합치기 : union, union all
@@ -1117,10 +1149,41 @@ where v.emp_id = e.emp_id;
 ***************************************************/
 -- 영업부, 정보시스템 부서의 사원아이디, 사원명, 급여, 부서아이디 조회
 -- union : 영업부서 사원들이 한번만 출력
-
+select 	emp_id	
+		, emp_name
+		, salary
+        , dept_id
+from	employee 
+where	dept_id = (select dept_id from department where dept_name = '영업')
+union
+select 	emp_id
+		, emp_name
+        , salary
+        , dept_id
+from 	employee
+where dept_id = (select dept_id from department where dept_name = '정보시스템');
 
 -- union all : 영업부서 사원들이 중복되어 출력
-
+select 	emp_id	
+		, emp_name
+		, salary
+        , dept_id
+from	employee 
+where	dept_id = (select dept_id from department where dept_name = '영업')
+union all
+select 	emp_id
+		, emp_name
+        , salary
+        , dept_id
+from 	employee
+where dept_id = (select dept_id from department where dept_name = '정보시스템')
+union all
+select 	emp_id	
+		, emp_name
+		, salary
+        , dept_id
+from	employee 
+where	dept_id = (select dept_id from department where dept_name = '영업');
 
 /********************************************************************
 	논리적인 테이블 : VIEW(뷰), SQL을 실행하여 생성된 결과를 가상테이블로 정의
@@ -1129,16 +1192,36 @@ where v.emp_id = e.emp_id;
 	뷰 삭제 : drop view [view 이름]
 	** 뷰 생성시 권한을 할당 받아야 함 - mysql, maria 제외
 ********************************************************************/
-
+select 	*
+from	information_schema.views
+where	table_schema = 'hrdb2019';
 
 -- 부서 총급여가 30000 이상인 테이블
-
+create view view_salary_sum
+as
+select	e.emp_id
+		, e.emp_name
+        , e.salary
+        , d.dept_id
+        , d.dept_name
+        , t.sum
+        , t.avg
+from	employee e
+		, department d
+        , (select	dept_id
+					, sum(salary) as sum
+					, avg(salary) as avg
+			from	employee 
+			group by dept_id
+			having	sum(salary) >= 30000) t
+where	e.dept_id = d.dept_id
+		and d.dept_id = t.dept_id;
 
 -- view_salary_sum 실행
-
+select * from view_salary_sum;
 
 -- view_salary_sum 삭제
-
+drop view view_salary_sum;
 
 /***************************************************************
 	DDL(Data Definition Language) : 생성, 수정, 삭제 - 테이블 기준
@@ -1160,44 +1243,67 @@ show tables;
 -- date : 년, 월, 일 -> curdate()
 -- datetime : 년, 월, 일, 시, 분, 초 -> sysdate(), now()
 
-
 -- emp 테이블 생성
 -- emp_id : (char, 4), ename : (varchar, 10), gender : (char, 1), hire_date : (datetime), salary : (int)
-
-
-
+show tables;
+create table emp2(
+	emp_id		char(4)
+    , ename		varchar(10)
+    , gender	char(1)
+    , hire_date	datetime
+    , salary	int
+);
+desc emp2;
 
 -- [테이블 삭제]
 -- 형식 : drop table [테이블명]
-
+drop table emp2;
 
 -- [테이블 복제]
 -- 형식 : create table [테이블명]
 -- 		 as [SQL 정의]
 -- employee 테이블을 복제하여 emp 테이블 생성 -> 복제할 때 제약사항은 복제되지 않음
-
+create table emp2
+as 
+select * from employee;
+select * from emp2;
+desc emp2;
+desc employee;
 
 -- 2016년도에 입사한 사원의 정보를 복제 : employee_2016
-
+create table employee_2016
+as
+select 	*
+from 	employee
+where	left(hire_date, 4) = '2016';
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++
 	데이터 생성(insert : C)
     형식 > insert into [테이블명] ({컬럼리스트 ...})
 		  values(데이터1, 데이터2, ...)
 +++++++++++++++++++++++++++++++++++++++++++++++++*/
-
-
+insert into emp2 (emp_id, ename, gender, hire_date, salary)
+	values('s001', '홍길동', 'm', now(), 1000);
+select * from emp2;
 
 -- [테이블 절삭 : 테이블의 데이터만 영구 삭제]
 -- 형식 > truncate table [테이블명];
-
+truncate table emp2;
+drop table emp2;
 
 -- [자동 행번호 생성 : auto_increment]
 -- 정수형으로 번호를 생성하여 저장함, pk, unique 제약으로 설정된 컬럼에 주로 사용
-	-- primary key : unique + not null
-				  
-
-
+create table emp2(
+	emp_id		int				auto_increment		primary key	-- primary key : unique + not null
+    , ename		varchar(10)		not null
+    , gender	char(1)			not null
+    , hire_date	datetime
+    , salary	int
+);
+desc emp2;
+insert into emp2(ename, gender, hire_date, salary)
+		values ('홍길동', 'm', now(), 1000);
+select * from emp2;
 
 /***************************************************************
 	테이블 변경 : alter table
@@ -1210,7 +1316,9 @@ show tables;
 select * from emp;
 
 -- phone(char, 13) 컬럼 추가, null 허용
-
+alter table emp2
+	add column phone	char(13) 	null;
+desc emp2;
     
 -- phone 컬럼 크기 변경 : char(13) --> char(10)
 alter table emp
@@ -1219,7 +1327,8 @@ alter table emp
 desc emp;
 
 -- phone 컬럼 삭제
-
+alter table emp2
+	drop column phone;
 
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	데이터 수정(update : U)
@@ -1229,18 +1338,34 @@ desc emp;
 	** set sql_safe_updates = 1 or 0; 
     -- 1 : 업데이트 불가, 0 : 업데이트 가능
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-
-            -- 업데이트 모드 해제. 창을 새로 띄울 때마다 해줘야함
+select * from emp2;
+set sql_safe_updates = 0;	-- 업데이트 모드 해제. 창을 새로 띄울 때마다 해줘야함
 -- 홍길동의 급여를 6000으로 수정
-
+update emp2
+	set 	salary = 6000
+    where	ename = '홍길동';
 
 -- 김유신의 입사날짜를 '20210725'로 수정
+update emp2
+	set 	hire_date = '20210725'
+    where	ename = '홍길동';
 
+update emp2
+	set 	hire_date = cast('20210725' as datetime)
+    where	ename = '홍길동';
 
 -- emp2 테이블에 retire_date 컬럼 추가 : date, null 허용
 -- 기존 데이터는 현재 날짜로 업데이트
 -- 업데이트 완료 후 retire_date 'not null' 설정 변경
+alter table emp2
+	add column retire_date	date	null;
 
+update emp2
+	set retire_date = curdate()
+    where retire_date is null;
+    
+alter table emp2
+	modify column retire_date date not null;
 
     
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1252,8 +1377,185 @@ desc emp;
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 -- 이순신 사원 삭제
-
+delete from emp2
+where ename = '홍길동';
 
 -- s004 사원 삭제
-
+delete from emp2
+where emp_id = 2;
 rollback;
+
+/********************************************************************************
+	constraint(제약사항) : 데이터의 무결성 원칙을 적용하기 위한 규칙
+    - unique(유니크 제약) : 중복방지 제약
+    - not null : null 값을 허용하지 않는 제약 :: 화면 구현시 유효성 체크로직과 연동!!
+    - primary key(기본키) : unique + not null 제약 설정
+    - foreign key(참조키) : 타 테이블의 기본키를 참조하는 컬럼 설정,
+						  참조하는 기본키의 데이터타입과 동일함
+    - default : 데이터 입력 시 기본으로 저장데이터는 값 설정
+    
+    ** 제약사항은 테이블 생성 시 정의 가능함, 또는 테이블 수정으로도 변경, 추가 가능
+    - create table..., alter table...
+********************************************************************************/
+use hrdb2019;
+select database();
+select * from information_schema.table_constraints
+where table_schema = 'hrdb2019';
+
+desc employee;
+desc department;
+
+-- 테이블 생성 : emp_const
+create table emp_const(
+	emp_id			char(4)			primary key
+	, emp_name		varchar(10)		not null
+    , hire_date		date
+    , salary		int
+);
+show tables;
+desc emp_const;
+
+select * from emp_const;
+
+desc emp_const;
+
+-- 테이블 생성 : emp_const2
+
+
+select * from emp_const2;
+
+-- emp_const2 컬럼 추가 : phone, char(13) 컬럼 추가
+desc emp_const2;
+select * from emp_const2;
+
+-- 홍길동의 폰번호 업데이트 후, phone 컬럼을 not null 수정
+	-- 해제
+
+select * from emp_const2;
+
+
+desc emp_const2;
+
+-- phone 컬럼에 unique 제약 추가, 중복된 데이터 확인, null 입력 가능(단, 1개만)
+
+        
+-- phone 컬럼에 unique 제약 삭제
+
+    
+-- emp 테이블 삭제
+show tables;
+drop table emp;
+drop table emp2;
+
+-- department 테이블의 복사본 : dept, employee 테이블의 복사본 : emp
+
+
+show tables;
+desc dept;
+select * from dept;
+
+-- dep_id 컬럼에 primary key 제약 추가
+
+desc dept;
+
+-- 2018년도에 입사한 사원들만 복제
+
+show tables;
+desc emp;
+select * from emp;
+
+-- emp 테이블 제약 사항 추가, primary key(emp_id)
+desc emp;
+
+-- foreign key(dept_id) 참조키 제약 추가
+
+        
+select * from dept;
+
+-- 고소해 부서이동 ----> ACC
+
+-- 홍길동 사원 추가
+select * from emp;
+
+/*
+[학사관리 시스템 설계]
+1. 과목(SUBJECT) 테이블은 
+	컬럼 : SID(과목아이디), SNAME(과목명), SDATE(등록일:년월일 시분초)
+    SID는 기본키, 자동으로 생성한다.
+2. 학생(STUDENT) 테이블은 반드시 하나이상의 과목을 수강해야 한다. 
+	컬럼 : STID(학생아이디) 기본키, 자동생성
+		SNAME(학생명) 널허용x,
+		GENDER(성별)  문자1자 널허용x,
+		SID(과목아이디),
+		STDATE(등록일자) 년월일 시분초
+3. 교수(PROFESSOR) 테이블은 반드시 하나이상의 과목을 강의해야 한다.
+	컬럼 : PID(교수아이디) 기본키, 자동생성
+		NAME(교수명) 널허용x
+		SID(과목아이디),
+		PDATE(등록일자) 년월일 시분초
+*/
+-- 과목 테이블 생성
+
+-- 학생 테이블 생성
+
+-- 교수 테이블 생성
+
+    
+    
+-- 과목 데이터추가
+
+-- 학생 데이터 입력
+
+-- 교수 데이터 추가
+
+
+
+-- 홍길동 학생이 수강하는 과목을 조회 (서브쿼리, 오라클 inner join, ansi inner join)
+
+
+-- 홍길동 학생이 수강하는 과목명과 학생명을 조회
+
+
+-- 스미스 교수가 강의하는 과목을 조회
+
+
+-- 스미스 교수가 강의하는 과목명과 교수명을 조회
+
+
+-- java 수업을 강의하는 모든 교수 조회
+
+
+-- java 수업을 강의하는 교수와 수강신청한 학생들을 조회
+-- 과목아이디, 과목명, 교수명, 학생명
+
+
+-- 김철수 교수가 강의하는 과목을 수강하는 학생 조회
+-- 학생명 출력, 서브쿼리
+
+
+
+-- kor, eng, math 과목 컬럼 추가, decimal(10, 2)
+
+
+
+/********************************************
+	회원, 상품, 주문, 주문상세 테이블 생성 및 실습
+********************************************/
+
+-- 홍길동 고객의 고객명, 이메일, 가입날짜, 주문날짜를 조회
+-- 주문날짜는 년, 월, 일로만 출력
+
+-- 상품별 주문 건수
+-- 상품명, 주문건수 출력
+
+-- 상품별 주문 건수(수량), 모든 상품 조회
+
+
+-- 회원이 주문한 내역과 제품명 조회
+-- 회원명, 가입날짜, 주문날짜, 주문수량, 제품명, 가격
+
+
+-- 회원이 주문한 내역과 제품명 조회
+-- 회원명, 가입날짜, 주문날짜, 주문수량, 제품명, 가격
+-- 주문되지 않은 모든 제품 출력
+
