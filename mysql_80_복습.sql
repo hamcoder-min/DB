@@ -1765,6 +1765,7 @@ create table orderitem(
     , order_id		int
     , product_id	int
     , quantity		int				not null
+    , unit_price	decimal(10, 2)	not null
     , constraint	fk_order_id		foreign key(order_id)
 			references orders(order_id)
     , constraint	fk_product_id	foreign key(product_id)
@@ -1772,8 +1773,44 @@ create table orderitem(
 );
 desc orderitem;
 
+insert into member(name, email)
+	values('홍길동', 'hong@example.com');
+insert into member(name, email)
+	values('이순신', 'lee@naver.com');
+select * from member;
+
+desc product;
+insert into product(name, price)
+	values	('모니터', 1000)
+			, ('키보드', 2000)
+            , ('마우스', 2500);
+select * from product;
+
+desc orders;
+insert into orders(member_id, order_date)
+	values(1, '2024-06-25');
+insert into orders(member_id, order_date)
+	values(2, '2025-01-25');
+select * from orders;
+
+desc orderitem;
+insert into orderitem(order_id, product_id, quantity, unit_price)
+	values(1, 2, 1, 2000);
+    
+insert into orderitem(order_id, product_id, quantity, unit_price)
+	values(2, 3, 2, 2500);
+select * from orderitem;
+
+
 -- 홍길동 고객의 고객명, 이메일, 가입날짜, 주문날짜를 조회
 -- 주문날짜는 년, 월, 일로만 출력
+select	m.name
+		, m.email
+        , m.create_at
+        , o.order_date
+from	member m
+		, orders o
+where	m.name = '홍길동';
 
 -- 상품별 주문 건수
 -- 상품명, 주문건수 출력
