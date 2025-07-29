@@ -1942,3 +1942,259 @@ from 	product p
 						where	m.member_id = o.member_id
 								and o.order_id = oi.order_id) t1
         on t1.product_id = p.product_id;
+        
+/************************************
+	행번호, 트리거를 이용한 사원번호 생성
+************************************/
+use hrdb2019;
+select database();
+
+-- 사원테이블의 사번, 사원명, 입사일, 폰번호, 이메일, 급여 조회
+select	emp_id
+		, emp_name
+		, hire_date
+        , phone
+        , email
+        , salary
+from	employee;
+
+-- row_number() over(order by 컬럼명 asc/desc)
+-- 입사일 : 입사년도, 급여 : 3자리 구분
+select	row_number() over(order by emp_id) as rno
+		, emp_id
+		, emp_name
+		, concat(left(hire_date, 4), '년') as hire_date
+        , phone
+        , email
+        , concat(format(salary, 0), '원') as salary
+from	employee;
+
+-- rno 행번호 추가, 주문날짜 (년, 월, 일), 가격(소수점 생략, 3자리 구분)
+select 	row_number() over() as rno
+		, t1.name
+		, t1.created_at
+        , left(t1.order_date, 10) as order_date
+        , t1.quantity
+        , p.name
+        , format(floor(p.price), 0) as price
+from 	product p
+		left outer join (select	m.name
+								, m.created_at
+								, o.order_date
+								, oi.quantity
+								, oi.product_id
+						from	member m
+								, orders o
+								, orderitem oi
+						where	m.member_id = o.member_id
+								and o.order_id = oi.order_id) t1
+        on t1.product_id = p.product_id;
+
+-- 석차를 구하는 함수
+select	rank() over(order by salary desc) as r
+		, emp_id
+		, emp_name
+        , dept_id
+        , salary
+from	employee;
+
+-- 트리거 : 프로시저(함수, 메소드)를 호출하는 시작점
+select	*
+from 	information_schema.triggers;
+
+-- 트리거 실습 테이블
+create table trg_member(
+	mid			char(5)		-- 'M0001'
+    , name 		varchar(10)
+    , mdate		date
+);
+show tables;
+desc trg_member;
+select * from trg_member;
+
+-- trg_member mid 컬럼 타입 수정 : varchar(10)
+alter table trg_member
+	modify column mid	varchar(10);
+    
+-- trigger 생성 : 여러개의 sql문 포함
+/*******************************************************************/
+delimiter $$
+create trigger trg_member_mid
+before insert on trg_member -- 테이블명
+for each row
+begin
+declare max_code int;	-- 'M0001'
+
+-- 현재 저장된 값 중 가장 큰 값을 가져옴
+select	ifnull(max(cast(right(mid, 4) as unsigned)), 0)
+into max_code
+from trg_member;
+
+-- 'M0001' 형식으로 아이디 생성, lpad(값, 크기, 채워지는 문자형식) : M0001
+set new.mid = concat('M', lpad((max_code + 1), 4, '0'));
+
+end $$
+delimiter ;
+/*******************************************************************/
+
+select * from information_schema.triggers;
+select * from trg_member;
+insert into trg_member(name, mdate)
+	values('홍길동', curdate());
+set sql_safe_updates = 0;
+delete from trg_member;
+
+-- 트리거 삭제
+drop trigger trg_member_mid;
+
+-- 필요없는 테이블 삭제
+show tables;
+drop table employee_2016;
+
+-- employee 테이블 구조만 복제
+desc employee;
+create table employee_stru
+as
+select * from employee where 1 = 0;
+show tables;
+desc employee_stru;
+select * from employee_stru;
+
+-- employee_stru, emp_id에 기본키 제약사항 추가
+alter table employee_stru
+	modify column emp_id	char(5)	primary key;
+    
+alter table employee_stru
+	add constraint primary key(emp_id);
+desc employee_stru;
+
+-- emp_id에 데이터 insert 작업 시 트리거가 실행되도록 생성
+-- 'E0001' 형식으로 데이터 추가
+select * from information_schema.triggers;
+
+/*******************************************************************/
+delimiter $$
+create trigger trg_employee_stru_emp_id
+before insert on employee_stru -- 테이블명
+for each row
+begin
+declare max_code int;	-- 'E0001'
+
+-- 현재 저장된 값 중 가장 큰 값을 가져옴
+select	ifnull(max(cast(right(emp_id, 4) as unsigned)), 0)
+into max_code
+from employee_stru;
+
+-- 'E0001' 형식으로 아이디 생성, lpad(값, 크기, 채워지는 문자형식) : E0001
+set new.emp_id = concat('E', lpad((max_code + 1), 4, '0'));
+
+end $$
+delimiter ;
+/*******************************************************************/
+insert into employee_stru(emp_name, eng_name, gender, hire_date, retire_date, dept_id, phone, email, salary)
+	values('홍길동', 'hong', 'M', curdate(), null, 'SYS', '010-1234-1234', 'hong@exercise.com', 1000);
+    
+insert into employee_stru(emp_name, eng_name, gender, hire_date, retire_date, dept_id, phone, email, salary)
+	values('이순신', 'captin', 'M', curdate(), null, 'HRD', '010-1234-5678', 'captin@exercise.com', 2000);
+
+select * from employee_stru;
+
+-- 참조관계에 대한 트리거 생성 : 참조관계(부모(dept : dept_id) <--> 자식(emp : dept_id))
+select * from dept;
+select * from emp;
+
+-- ACC 부서 삭제
+delete from dept where dept_id = 'ACC';		-- emp의 고소해 사원이 참조중
+
+-- GEN 부서 삭제
+delete from dept where dept_id = 'GEN';		-- emp에서 참조하는 사원이 없으므로 삭제 가능!!
+
+-- 정주고 사원 삭제
+delete from emp where emp_name = '정주고';
+
+-- 1. 참조 관계 설정 시 on delete cascade 
+-- 부모의 참조 컬럼이 삭제되면, 자식의 행이 함께 삭제됨
+-- 뉴스테이블의 기사 컬럼이 삭제되며, 댓글테이블의 댓글이 함께 삭제
+-- 게시판의 게시글 삭제 시 게시글의 댓글이 함께 삭제
+create table board (
+	bid			int 			primary	key		auto_increment
+    , title		varchar(100) 	not null
+    , contents	longtext
+    , bdate		datetime
+);
+desc board;
+
+
+create table reply(
+	rid				int 			primary key 	auto_increment
+    , contents		varchar(100)	not null
+    , bid			int				not null
+    , rdate			datetime
+    , constraint	fk_reply_bid	foreign key(bid)
+			references board(bid)	on delete cascade
+);
+desc reply;
+select * from board;
+insert into board(title, contents, bdate)
+	values('test', 'test', curdate());
+
+select * from reply;
+insert into reply(contents, bid, rdate)
+	values('reply test', 4, curdate());
+
+-- bid 2 삭제
+delete from board where bid = 2;
+select * from board;
+select * from reply;
+
+-- 2. 트리거를 사용하여 부모의 참조컬럼 삭제 시 자식의 참조 컬럼 데이터를 null로 변경
+-- **** 오라클 데이터베이스에서는 트리거 실행 가능!!!
+-- **** innoDB 형식의 데이터베이스인 mysql, maria는 트리거 실행 불가능!!
+-- 이유는 innoDB 형식은 트리거 실행 전 참조관계를 먼저 체크하여 에러 발생 시킴!!
+
+select * from information_schema.triggers;
+-- dept 테이블의 row 삭제 시(dept_id 컬럼 포함), 참조하는 emp 테이블의 dept_id에 null값 업데이트
+/*******************************************************************/
+delimiter $$
+create trigger trg_dept_dept_id_delete
+after delete on dept -- 테이블명
+for each row
+begin
+
+-- 참조하는 emp 테이블의 dept_id에 null값 업데이트
+update emp
+	set dept_id = null
+    where dept_id = old.dept_id;	-- old.dept_id : dept 테이블에서 삭제된 dept_id
+
+end $$
+delimiter ;
+/*******************************************************************/
+
+-- 사원 테이블의 급여 변경 시 로그 저장 :: 트리거 업데이트 이용
+select * from information_schema.triggers;
+create table salary_log(
+	emp_id			char(5)		primary key
+    , old_salary	int
+    , new_salary	int
+    , change_date	date
+);
+desc salary_log;
+select * from information_schema.triggers;
+select * from salary_log;
+update employee 
+	set salary = 8000
+    where emp_id = 'S0020';
+/*******************************************************************/
+delimiter $$
+create trigger trg_salary_update
+after update on employee -- 테이블명
+for each row
+begin
+-- 사원 테이블의 급여 변경 시 로그 저장		old.salary(기존 급여), new.salary(새로운 급여)
+	if old.salary <> new.salary then
+		insert into salary_log(emp_id, old_salary, new_salary, change_date)
+			values(old.emp_id, old.salary, new.salary, now());
+	end if;
+end $$
+delimiter ;
+/*******************************************************************/
