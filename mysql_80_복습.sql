@@ -1807,9 +1807,19 @@ select * from orderitem;
 select	m.name
 		, m.email
         , m.create_at
-        , o.order_date
+        , left(o.order_date, 10) as order_date
 from	member m
 		, orders o
+where	m.member_id = o.member_id
+		and m.name = '홍길동';
+
+select	m.name
+		, m.email
+        , m.create_at
+        , left(o.order_date, 10) as order_date
+from	member m
+		inner join orders o
+        on m.member_id = o.member_id
 where	m.name = '홍길동';
 
 -- 상품별 주문 건수
