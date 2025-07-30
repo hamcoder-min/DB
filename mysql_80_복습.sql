@@ -1951,7 +1951,7 @@ as
 select * from employee where 1 = 0;
 show tables;
 desc employee_stru;
-select * from employee_stru;
+select * from employee_stru; 
 
 -- employee_stru, emp_id에 기본키 제약사항 추가
 alter table employee_stru
