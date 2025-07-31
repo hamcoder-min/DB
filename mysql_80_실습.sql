@@ -1894,7 +1894,7 @@ order by count;
 -- 회원이 주문한 내역과 제품명 조회
 -- 회원명, 가입날짜, 주문날짜, 주문수량, 제품명, 가격
 select	m.name
-		, m.created_at
+		, m.create_at
         , o.order_date
         , oi.quantity
         , p.name

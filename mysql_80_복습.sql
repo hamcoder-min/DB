@@ -1824,17 +1824,77 @@ where	m.name = '홍길동';
 
 -- 상품별 주문 건수
 -- 상품명, 주문건수 출력
+select	p.name
+		, count(*) as count
+from	product p
+		, orderitem oi
+where	p.product_id = oi.product_id
+group by p.name
+order by count;
+
+select	p.name
+		, count(*) as count
+from	product p
+		inner join orderitem oi
+        on p.product_id = oi.product_id
+group by p.name
+order by count;
+
+insert into product(name, price)
+	values	('리모컨', 3000)
+			, ('USB', 2000);
+select * from product;
+select * from orderitem;
 
 -- 상품별 주문 건수(수량), 모든 상품 조회
-
+select	p.name
+		, count(quantity) as count
+from	product p
+		left outer join orderitem oi
+        on p.product_id = oi.product_id
+group by p.name
+order by count;
 
 -- 회원이 주문한 내역과 제품명 조회
 -- 회원명, 가입날짜, 주문날짜, 주문수량, 제품명, 가격
+select	m.name
+		, m.create_at
+        , o.order_date
+        , oi.quantity
+        , p.name
+        , p.price
+from	member m
+		, orders o
+        , orderitem oi
+        , product p
+where	m.member_id = o.member_id
+		and o.order_id = oi.order_id
+        and oi.product_id = p.product_id;
+        
+select	m.name
+		, m.create_at
+        , o.order_date
+        , oi.quantity
+        , p.name
+        , p.price
+from	member m
+		inner join orders o
+        on m.member_id = o.member_id
+        inner join orderitem oi
+        on o.order_id = oi.order_id
+        inner join product p
+        on p.product_id = oi.product_id;
 
+desc member;
+desc orders;
+desc product;
+desc orderitem;
 
 -- 회원이 주문한 내역과 제품명 조회
 -- 회원명, 가입날짜, 주문날짜, 주문수량, 제품명, 가격
 -- 주문되지 않은 모든 제품 출력
+select	
+from	
 
 /************************************
 	행번호, 트리거를 이용한 사원번호 생성
